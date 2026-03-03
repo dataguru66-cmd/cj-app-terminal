@@ -478,7 +478,7 @@
         <div class="glow glow-2"></div>
     </div>
 
-    <!-- Login Challenge Overlay -->
+    <!-- Login Challenge Overlay (Temporarily Disabled)
     <div id="auth-overlay">
         <div class="auth-box">
             <h1 class="text-gradient" style="font-size: 2.2rem; margin-bottom: 0.5rem; letter-spacing: 1px;">CJ.APP</h1>
@@ -502,6 +502,7 @@
             <div id="auth-error"></div>
         </div>
     </div>
+    -->
 
     <!-- Main Application -->
     <div id="app-wrapper" style="display: none;">
@@ -739,7 +740,8 @@
         }
 
         function initApp() {
-            document.getElementById('auth-overlay').style.display = 'none';
+            const authOverlay = document.getElementById('auth-overlay');
+            if (authOverlay) authOverlay.style.display = 'none';
             document.getElementById('app-wrapper').style.display = 'flex';
             loadChart('PEPPERSTONE:NAS100'); // Load initial chart
         }
@@ -767,8 +769,11 @@
             }
         }
 
-        // Check on load
+        // Check on load (Auth Temporarily Disabled)
         window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+
+            /*
             const authTime = localStorage.getItem('cj_app_auth');
             if (authTime) {
                 if (checkExpiration()) {
@@ -779,6 +784,7 @@
                     initApp();
                 }
             }
+            */
         });
 
         // --- 3. Navigation ---
