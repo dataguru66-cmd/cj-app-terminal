@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CJ App - Trading Assistant</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <div class="background-effects">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <div class="glow glow-3"></div>
+    </div>
+
+    <div class="app-container glass">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">CJ</div>
+                <h2>Assistant</h2>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="nav-item active" data-tab="chart">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    <span>Chart & Strategy</span>
+                </li>
+                <li class="nav-item" data-tab="news">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/><path d="M15 13H9"/><path d="M15 17H9"/><path d="M15 9H9"/></svg>
+                    <span>News & Rules</span>
+                </li>
+                <li class="nav-item" data-tab="stocks">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Stocks Breadth</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <header class="topbar glass-panel">
+                <h1 id="page-title">Market Chart: NAS100 & US30</h1>
+                <div class="market-status">
+                    <span class="status-dot"></span>
+                    <span>Market Open</span>
+                </div>
+            </header>
+
+            <!-- SECTION: CHART -->
+            <section id="chart-section" class="tab-content active">
+                <div class="chart-layout">
+                    <!-- Left: TradingView Chart -->
+                    <div class="chart-wrapper glass-panel">
+                        <div class="chart-controls">
+                            <button class="asset-btn active" data-symbol="PEPPERSTONE:NAS100">NAS100</button>
+                            <button class="asset-btn" data-symbol="CAPITALCOM:US30">US30</button>
+                        </div>
+                        <div id="tv_chart" class="tv-widget-container"></div>
+                    </div>
+                    
+                    <!-- Right: Strategy Assistant -->
+                    <div class="strategy-panel glass-panel">
+                        <div class="panel-header">
+                            <h3>15M Strategy <a href="https://www.tradingwithrayner.com/candlestick-patterns/" target="_blank" class="info-link" title="Candlestick Bible Pattern Guide">(Bible)</a></h3>
+                            <span class="badge">4 Variations</span>
+                        </div>
+                        
+                        <div class="session-tracker">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="asia-marked">
+                                <span>Marked ASIA Session High & Low</span>
+                            </label>
+                        </div>
+
+                        <div class="scrollable-variations">
+                            <!-- V1 -->
+                            <div class="variation-card">
+                                <h4><span class="v-badge sell">V1</span> Structure Break</h4>
+                                <ul>
+                                    <li>London breaks ASIA High</li>
+                                    <li>NY breaks London High</li>
+                                    <li>Confirm w/ Candlesticks & News</li>
+                                </ul>
+                                <button class="action-btn sell-action">Confirm SELL (Target: Asia Low)</button>
+                            </div>
+
+                            <!-- V2 -->
+                            <div class="variation-card">
+                                <h4><span class="v-badge sell">V2</span> Fake Structure</h4>
+                                <ul>
+                                    <li>London breaks ASIA High</li>
+                                    <li>NY makes high but NO London break</li>
+                                    <li>Confirm w/ Candlesticks & News</li>
+                                </ul>
+                                <button class="action-btn sell-action">Confirm SELL (Target: Asia Low)</button>
+                            </div>
+
+                            <!-- V3 -->
+                            <div class="variation-card">
+                                <h4><span class="v-badge buy">V3</span> Continuation Down Break</h4>
+                                <ul>
+                                    <li>London breaks ASIA Low</li>
+                                    <li>NY breaks London Low</li>
+                                    <li>Confirm w/ Candlesticks & News</li>
+                                </ul>
+                                <button class="action-btn buy-action">Confirm BUY (Target: Asia High)</button>
+                            </div>
+
+                            <!-- V4 -->
+                            <div class="variation-card">
+                                <h4><span class="v-badge buy">V4</span> Reversal Down Failure</h4>
+                                <ul>
+                                    <li>London breaks ASIA Low</li>
+                                    <li>NY hits low but NO London break</li>
+                                    <li>Confirm w/ Candlesticks & News</li>
+                                </ul>
+                                <button class="action-btn buy-action">Confirm BUY (Target: Asia High)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: NEWS -->
+            <section id="news-section" class="tab-content hidden">
+                <div class="news-layout">
+                    <!-- Top Warning -->
+                    <div class="news-rules glass-panel warning-theme">
+                        <div class="rule-header">
+                            <span class="warning-icon">⚠️</span>
+                            <h3>Critical News Strategy</h3>
+                        </div>
+                        <div class="rule-grid">
+                            <div class="rule-box prohibit">
+                                <strong>NFP / CPI</strong>
+                                <p>Strictly DO NOT TRADE. Strategy invalidated.</p>
+                            </div>
+                            <div class="rule-box caution">
+                                <strong>Red Folders</strong>
+                                <p>Do not trade during or right before High Impact events.</p>
+                                <a href="https://www.forexfactory.com/" target="_blank" class="rule-link">Check ForexFactory</a>
+                            </div>
+                            <div class="rule-box allow">
+                                <strong>Post-News</strong>
+                                <p>Trade AFTER if Market Structure (V1-V4) holds perfectly.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="news-synthesis">
+                            <h4>News Direction Assistant (Overall Context)</h4>
+                            <div class="synthesis-buttons">
+                                <button class="btn-synth buy">Suggest BUY</button>
+                                <button class="btn-synth neutral active">Neutral / Wait</button>
+                                <button class="btn-synth sell">Suggest SELL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Calendar -->
+                    <div class="calendar-wrapper glass-panel">
+                        <div class="widget-embed-header">
+                            <h3>Economic Calendar</h3>
+                        </div>
+                        <div id="tv_calendar" class="tv-widget-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: STOCKS -->
+            <section id="stocks-section" class="tab-content hidden">
+                <div class="stocks-layout">
+                    <!-- Left: TV Screener -->
+                    <div class="screener-wrapper glass-panel">
+                        <div class="widget-embed-header">
+                            <h3>Market Cap Stock Screener (<a href="https://www.tradingview.com/screener/" target="_blank" class="rule-link">Open Full</a>)</h3>
+                        </div>
+                        <div id="tv_screener" class="tv-widget-container"></div>
+                    </div>
+                    
+                    <!-- Right: Summary -->
+                    <div class="stock-summary-panel glass-panel">
+                        <h3>Market Breadth</h3>
+                        <p class="desc">Filter screener from high to low Market Cap. Summarize overall direction of top stocks to guide NAS100/US30.</p>
+                        
+                        <div class="breadth-indicator">
+                            <div class="breadth-circle neutral" id="breadth-display">
+                                Wait
+                            </div>
+                            <div class="breadth-controls">
+                                <button class="btn-breadth bg-buy" onclick="setBreadth('BUY')">Majority Green (BUY)</button>
+                                <button class="btn-breadth bg-sell" onclick="setBreadth('SELL')">Majority Red (SELL)</button>
+                                <button class="btn-breadth bg-neutral" onclick="setBreadth('WAIT')">Mixed (WAIT)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

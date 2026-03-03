@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- iOS / PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CJ App">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <title>CJ App - Trading Assistant</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --panel-bg: rgba(20, 27, 45, 0.6);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --primary-accent: #00f2fe;
+            --secondary-accent: #4facfe;
+            --text-main: #f0f4f8;
+            --text-muted: #94a3b8;
+
+            --buy-color: #10b981;
+            --buy-bg: rgba(16, 185, 129, 0.15);
+            --sell-color: #ef4444;
+            --sell-bg: rgba(239, 68, 68, 0.15);
+
+            --warning-color: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            /* Prevent body scroll, manage scroll in containers */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Hide scrollbar for seamless look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Background Effects */
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.35;
+        }
+
+        .glow-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, var(--primary-accent) 0%, transparent 70%);
+        }
+
+        .glow-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, var(--secondary-accent) 0%, transparent 70%);
+        }
+
+        /* Auth Overlay */
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: var(--panel-bg);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--panel-border);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(12px);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--primary-accent);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+            color: #000;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .auth-btn:hover {
+            opacity: 0.9;
+        }
+
+        #auth-error {
+            color: var(--sell-color);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        /* Main App Container */
+        #app-wrapper {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Glass Panels */
+        .glass-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Topbar / Navigation (Mobile scale-down friendly) */
+        .topbar {
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--panel-border);
+            background: rgba(10, 14, 23, 0.8);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+
+        .nav-item {
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--primary-accent);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Tabs */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease forwards;
+            gap: 16px;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Chart Layout */
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .asset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .asset-btn.active {
+            background: var(--secondary-accent);
+            color: #fff;
+            border-color: var(--secondary-accent);
+        }
+
+        .tv-widget-container {
+            flex: 1;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            min-height: 400px;
+        }
+
+        /* Strategy Panel */
+        .strategy-panel {
+            padding: 16px;
+            flex-shrink: 0;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--primary-accent);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .variations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .variation-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .variation-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .v-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .v-badge.sell {
+            background: var(--sell-color);
+        }
+
+        .v-badge.buy {
+            background: var(--buy-color);
+        }
+
+        .variation-card ul {
+            list-style: none;
+            margin-bottom: 12px;
+            padding-left: 14px;
+        }
+
+        .variation-card ul li {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .variation-card ul li::before {
+            content: "•";
+            position: absolute;
+            left: -14px;
+            color: var(--primary-accent);
+        }
+
+        .copy-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 16px;
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            color: var(--primary-accent);
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        /* News Layout */
+        .warning-theme {
+            border-left: 4px solid var(--sell-color);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .warning-theme h3 {
+            color: var(--sell-color);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Responsive */
+        @media (min-width: 1024px) {
+            #app-wrapper {
+                flex-direction: row;
+            }
+
+            .topbar {
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: stretch;
+                width: 250px;
+                border-bottom: none;
+                border-right: 1px solid var(--panel-border);
+                padding: 24px 16px;
+            }
+
+            .logo {
+                margin-bottom: 30px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                overflow: visible;
+            }
+
+            .nav-item {
+                padding: 12px 16px;
+                margin-bottom: 8px;
+            }
+
+            .tab-content {
+                flex-direction: row;
+                height: 100%;
+            }
+
+            .chart-col {
+                flex: 2;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .strategy-col {
+                flex: 1;
+                max-width: 400px;
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .variations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background -->
+    <div class="background-effects">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+    </div>
+
+    <!-- Login Challenge Overlay -->
+    <div id="auth-overlay">
+        <div class="auth-box">
+            <h1 class="text-gradient" style="font-size: 2.2rem; margin-bottom: 0.5rem; letter-spacing: 1px;">CJ.APP</h1>
+            <p style="color: var(--text-muted); margin-bottom: 0.5rem;">Authorized iOS Terminal</p>
+            <p
+                style="color: var(--buy-color); font-size: 0.8rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Secured by enterprise-grade TLS encryption. Your data is private, verifiable, and strictly protected
+                end-to-end.
+            </p>
+
+            <input type="text" id="username" class="auth-input" placeholder="Username" autocomplete="off"
+                autocorrect="off" autocapitalize="off" />
+            <input type="password" id="password" class="auth-input" placeholder="Password" />
+
+            <button class="auth-btn" onclick="attemptLogin()">ACCESS TERMINAL</button>
+            <div id="auth-error"></div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-wrapper" style="display: none;">
+
+        <aside class="topbar glass-panel" style="border-radius: 0;">
+            <div class="logo">
+                <h1 class="text-gradient">CJ Assistant</h1>
+            </div>
+            <div class="nav-links">
+                <div class="nav-item active" data-tab="chart">📈 Chart & Strategy</div>
+                <div class="nav-item" data-tab="news">📰 News & Events</div>
+                <div class="nav-item" data-tab="stocks">📊 Options / Breadth</div>
+                <div class="nav-item" data-tab="disclaimer" style="color: var(--warning-color);">⚖️ Disclaimer</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- CHART VIEW -->
+            <section id="chart-section" class="tab-content active">
+                <div class="chart-col">
+                    <div class="glass-panel"
+                        style="display: flex; flex-direction: column; padding: 12px; height: 100%; min-height: 50vh;">
+                        <div class="chart-controls">
+                            <button class="asset-btn active"
+                                onclick="switchAsset('PEPPERSTONE:NAS100', this)">NAS100</button>
+                            <button class="asset-btn" onclick="switchAsset('CAPITALCOM:US30', this)">US30</button>
+                        </div>
+                        <!-- Provide a unique ID for the chart -->
+                        <div id="tv_main_chart" class="tv-widget-container"></div>
+                    </div>
+                </div>
+
+                <div class="strategy-col">
+                    <div class="strategy-panel glass-panel">
+                        <div class="panel-header">
+                            <h3>15M Strategy</h3>
+                            <span class="badge">4 Variations</span>
+                        </div>
+
+                        <div class="variations-grid">
+                            <div class="variation-card">
+                                <h4><span class="v-badge sell">V1</span> Structure Break</h4>
+                                <ul>
+                                    <li>London breaks ASIA High</li>
+                                    <li>NY breaks London High</li>
+                                </ul>
+                            </div>
+                            <div class="variation-card">
+                                <h4><span class="v-badge sell">V2</span> Fake Structure</h4>
+                                <ul>
+                                    <li>London breaks ASIA High</li>
+                                    <li>NY makes high, NO London break</li>
+                                </ul>
+                            </div>
+                            <div class="variation-card">
+                                <h4><span class="v-badge buy">V3</span> Down Break</h4>
+                                <ul>
+                                    <li>London breaks ASIA Low</li>
+                                    <li>NY breaks London Low</li>
+                                </ul>
+                            </div>
+                            <div class="variation-card">
+                                <h4><span class="v-badge buy">V4</span> Down Failure</h4>
+                                <ul>
+                                    <li>London breaks ASIA Low</li>
+                                    <li>NY hits low, NO London break</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px; border-top: 1px solid var(--panel-border); padding-top: 16px;">
+                            <h4 style="margin-bottom: 8px; font-size: 0.95rem; color: var(--text-muted);">Export
+                                Strategy Script</h4>
+                            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <button class="asset-btn active" id="btn-pine"
+                                    onclick="selectScriptType('pine')">TradingView (Pine)</button>
+                                <button class="asset-btn" id="btn-mql" onclick="selectScriptType('mql')">MetaTrader 5
+                                    (MQL5)</button>
+                            </div>
+                            <button class="copy-btn" id="main-copy-btn" onclick="copyActiveStrategy()">©️ Copy Script to
+                                Clipboard</button>
+
+                            <div style="margin-top: 12px;">
+                                <a href="https://www.tradingview.com/" target="_blank"
+                                    style="display: block; width: 100%; text-align: center; padding: 10px; background: rgba(255,255,255,0.05); color: var(--text-muted); text-decoration: none; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--panel-border); font-weight: 500; transition: all 0.2s;">Open
+                                    TradingView Platform</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NEWS VIEW -->
+            <section id="news-section" class="tab-content">
+                <div class="glass-panel warning-theme">
+                    <h3>⚠️ CRITICAL TRADING RULE</h3>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">
+                        <strong>DO NOT TRADE ON NFP AND CPI DAYS.</strong> The standard market structure strategy will
+                        not function accurately during these events.<br><br>
+                        Only trade <em>after</em> Red Folder news has settled, provided market structure holds according
+                        to the 4 Variations.
+                    </p>
+                </div>
+
+                <div class="glass-panel" style="flex: 1; padding: 16px; min-height: 60vh;">
+                    <h3 style="margin-bottom: 12px;">Economic Calendar</h3>
+                    <div class="tradingview-widget-container" style="height:calc(100% - 40px);width:100%">
+                        <div class="tradingview-widget-container__widget"></div>
+                        <script type="text/javascript"
+                            src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+                                {
+                                    "colorTheme": "dark",
+                                        "isTransparent": true,
+                                            "width": "100%",
+                                                "height": "100%",
+                                                    "locale": "en",
+                                                        "importanceFilter": "-1,0,1",
+                                                            "currencyFilter": "USD"
+                                }
+                            </script>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STOCKS VIEW -->
+            <section id="stocks-section" class="tab-content">
+                <div class="glass-panel" style="padding: 16px; margin-bottom: 16px;">
+                    <h3 style="color: var(--primary-accent); margin-bottom: 8px;">Market Direction Assist</h3>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">Review top US stocks by market cap. General
+                        green momentum supports buys; red supports sells. Use to supplement NAS100/US30 conviction.</p>
+                </div>
+
+                <div class="glass-panel" style="flex: 1; padding: 16px; min-height: 60vh;">
+                    <div class="tradingview-widget-container" style="height:100%;width:100%">
+                        <div class="tradingview-widget-container__widget"></div>
+                        <script type="text/javascript"
+                            src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js" async>
+                                {
+                                    "width": "100%",
+                                        "height": "100%",
+                                            "defaultColumn": "overview",
+                                                "defaultScreen": "most_capitalized",
+                                                    "market": "america",
+                                                        "showToolbar": true,
+                                                            "colorTheme": "dark",
+                                                                "locale": "en",
+                                                                    "isTransparent": true
+                                }
+                            </script>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DISCLAIMER VIEW -->
+            <section id="disclaimer-section" class="tab-content" style="padding: 16px; overflow-y: auto;">
+                <div class="glass-panel" style="padding: 24px;">
+                    <h2 class="text-gradient" style="margin-bottom: 16px; font-size: 1.5rem;">Software Disclaimer &
+                        Intellectual Property Notice</h2>
+
+                    <div style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
+                        <h4 style="color: var(--text-main); margin-top: 16px; margin-bottom: 8px;">1. Nature of Service
+                        </h4>
+                        <p style="margin-bottom: 16px;">This application is a proprietary software tool designed to
+                            analyse publicly available market data—including price movements, news developments, and
+                            technical confluences—using predefined strategy logic. The software generates structured
+                            analytical outputs and trade idea indications based on programmed criteria.</p>
+
+                        <h4 style="color: var(--text-main); margin-top: 16px; margin-bottom: 8px;">2. No Financial
+                            Advice</h4>
+                        <p style="margin-bottom: 16px;">The software does not provide financial advice, investment
+                            advice, discretionary portfolio management, or personalised trading recommendations. All
+                            outputs are strictly informational in nature. Users retain full and absolute control over
+                            their brokerage accounts and remain solely responsible for any trading decisions,
+                            executions, or omissions.</p>
+
+                        <h4 style="color: var(--text-main); margin-top: 16px; margin-bottom: 8px;">3. Risk Disclosure
+                        </h4>
+                        <p style="margin-bottom: 16px;">Trading leveraged financial instruments involves substantial
+                            risk and may result in the partial or total loss of invested capital. Past performance, as
+                            indicated by backtesting or historical analysis within the software, is not a guarantee of
+                            future results.</p>
+
+                        <h4 style="color: var(--text-main); margin-top: 16px; margin-bottom: 8px;">4. Limitation of
+                            Liability</h4>
+                        <p style="margin-bottom: 16px;">This software is provided on an "as-is" and "as-available"
+                            basis. The Owner makes no warranties, express or implied, regarding the accuracy,
+                            completeness, or timeliness of the data feeds or analytical outputs. The Owner shall not be
+                            held liable for any financial losses, lost profits, or damages resulting from software
+                            downtime, data inaccuracies, or technical malfunctions.</p>
+
+                        <h4 style="color: var(--text-main); margin-top: 16px; margin-bottom: 8px;">5. Intellectual
+                            Property</h4>
+                        <p style="margin-bottom: 12px;">All software code, algorithms, strategy logic, analytical
+                            models, interface design, and system architecture are the exclusive intellectual property of
+                            the Owner and are protected under applicable copyright and international intellectual
+                            property laws.</p>
+
+                        <p style="margin-bottom: 8px; font-weight: 600; color: var(--warning-color);">Strictly
+                            Prohibited Actions:</p>
+                        <ul style="padding-left: 20px; margin-bottom: 16px;">
+                            <li style="margin-bottom: 4px;">Unauthorised copying or redistribution.</li>
+                            <li style="margin-bottom: 4px;">Reverse engineering, decompilation, or replication.</li>
+                            <li style="margin-bottom: 4px;">Modification or commercial exploitation of the software or
+                                its underlying methodology.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        // --- 1. Service Worker Registration (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(err => {
+                    console.error('SW registration failed: ', err);
+                });
+            });
+        }
+
+        // --- 2. Auth Logic ---
+        function checkExpiration() {
+            const authTime = localStorage.getItem('cj_app_auth');
+            if (!authTime) return false;
+            const sessionStart = parseInt(authTime, 10);
+            const currentTime = new Date().getTime();
+            const hours24 = 24 * 60 * 60 * 1000;
+            return (currentTime - sessionStart > hours24);
+        }
+
+        function initApp() {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('app-wrapper').style.display = 'flex';
+            loadChart('PEPPERSTONE:NAS100'); // Load initial chart
+        }
+
+        function attemptLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const err = document.getElementById('auth-error');
+
+            if (u === "Ádmyn" && p === "Nymda0226!") {
+                if (checkExpiration()) {
+                    err.innerHTML = "Credentials have expired.<br>Contact Dynamic Resource Systems.";
+                    err.style.display = 'block';
+                    return;
+                }
+
+                if (!localStorage.getItem('cj_app_auth')) {
+                    localStorage.setItem('cj_app_auth', new Date().getTime().toString());
+                }
+
+                initApp();
+            } else {
+                err.innerText = "Invalid credentials.";
+                err.style.display = 'block';
+            }
+        }
+
+        // Check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const authTime = localStorage.getItem('cj_app_auth');
+            if (authTime) {
+                if (checkExpiration()) {
+                    const err = document.getElementById('auth-error');
+                    err.innerHTML = "Credentials have expired.<br>Contact Dynamic Resource Systems.";
+                    err.style.display = 'block';
+                } else {
+                    initApp();
+                }
+            }
+        });
+
+        // --- 3. Navigation ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(nav => nav.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                item.classList.add('active');
+                const targetId = item.getAttribute('data-tab') + '-section';
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+
+        // --- 4. Chart Logic ---
+        let tvWidget = null;
+        function loadChart(symbol) {
+            if (tvWidget) {
+                // If TradingView widget already exists, re-initialize it in the container
+                document.getElementById('tv_main_chart').innerHTML = '';
+            }
+
+            tvWidget = new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "15",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "enable_publishing": false,
+                "backgroundColor": "rgba(20, 27, 45, 0)", // transparent to match glass
+                "gridColor": "rgba(255, 255, 255, 0.05)",
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": false,
+                "container_id": "tv_main_chart"
+            });
+        }
+
+        window.switchAsset = function (symbol, btn) {
+            document.querySelectorAll('.asset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loadChart(symbol);
+        }
+
+        // --- 5. Copy Strategy ---
+        const pineScript = `//@version=5
+indicator("CJ App: 4 Variations Market Structure", overlay=true)
+
+grp_sessions = "Session Times (UTC)"
+asia_session = input.session("0000-0800", "Asia Session", group=grp_sessions)
+london_session = input.session("0800-1300", "London Session", group=grp_sessions)
+ny_session = input.session("1300-2000", "NY Session", group=grp_sessions)
+
+color_asia = color.new(color.blue, 90)
+in_session(sess) => not na(time(timeframe.period, sess))
+
+is_asia   = in_session(asia_session)
+is_london = in_session(london_session)
+is_ny     = in_session(ny_session)`;
+
+        const mql5Script = `//+------------------------------------------------------------------+
+//|                                     CJ_App_4_Variations.mq5      |
+//|                                     Market Structure Assistant   |
+//+------------------------------------------------------------------+
+#property indicator_chart_window
+
+//--- Input parameters
+input string   AsiaSessionTime   = "00:00-08:00"; // Asia Session
+input string   LondonSessionTime = "08:00-13:00"; // London Session
+input string   NYSessionTime     = "13:00-20:00"; // NY Session
+input color    AsiaColor         = clrBlue;       // Asia Box Color
+
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+   // Initialize arrays, buffers, and session time tracking logic here
+   // MetaTrader 5 Expert Advisor structure stub
+   return(INIT_SUCCEEDED);
+  }
+
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+// Logic to detect Asia boundaries and London/NY breaks goes here
+// Check TimeHour() against input strings to draw standard structure boxes
+   
+   return(rates_total);
+  }`;
+
+        let activeScriptType = 'pine';
+
+        window.selectScriptType = function (type) {
+            activeScriptType = type;
+            document.getElementById('btn-pine').classList.remove('active');
+            document.getElementById('btn-mql').classList.remove('active');
+
+            if (type === 'pine') {
+                document.getElementById('btn-pine').classList.add('active');
+            } else {
+                document.getElementById('btn-mql').classList.add('active');
+            }
+        }
+
+        window.copyActiveStrategy = function () {
+            const btn = document.getElementById('main-copy-btn');
+            const originalText = btn.innerText;
+            const scriptToCopy = activeScriptType === 'pine' ? pineScript : mql5Script;
+
+            function showSuccess() {
+                btn.innerText = "✅ Script Copied (" + activeScriptType.toUpperCase() + ")";
+                btn.style.color = "var(--buy-color)";
+                btn.style.borderColor = "var(--buy-color)";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.color = "var(--primary-accent)";
+                    btn.style.borderColor = "var(--primary-accent)";
+                }, 2000);
+            }
+
+            // Fallback for iOS or non-HTTPS contexts where navigator.clipboard might fail
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+
+                // Avoid scrolling to bottom
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                let successful = false;
+                try {
+                    successful = document.execCommand('copy');
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+
+                document.body.removeChild(textArea);
+
+                if (successful) {
+                    showSuccess();
+                } else {
+                    alert("Clipboard access denied or not supported by your browser.");
+                }
+            }
+
+            if (!navigator.clipboard) {
+                fallbackCopyTextToClipboard(scriptToCopy);
+                return;
+            }
+
+            navigator.clipboard.writeText(scriptToCopy).then(() => {
+                showSuccess();
+            }).catch(err => {
+                // If the modern API fails, try the fallback
+                console.warn("navigator.clipboard failed, trying fallback...", err);
+                fallbackCopyTextToClipboard(scriptToCopy);
+            });
+        }
+    </script>
+</body>
+
+</html>

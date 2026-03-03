@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CJ App</string>
+    <string name="title_activity_main">CJ App</string>
+    <string name="package_name">com.dynamicresourcesystems.cjapp</string>
+    <string name="custom_url_scheme">com.dynamicresourcesystems.cjapp</string>
+</resources>

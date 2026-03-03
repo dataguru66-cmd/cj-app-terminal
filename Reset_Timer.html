@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reset CJ App Timer</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #00f2fe;
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="status">
+        <h2>Resetting Timer...</h2>
+    </div>
+    <script>
+        // Clears the 24-hour expiration token from the browser
+        localStorage.removeItem('cj_app_auth');
+        document.getElementById('status').innerHTML = "<h1>✅ Timer Reset Successfully!</h1><p style='color: #94a3b8; margin-top: 1rem;'>The 24-hour lock has been cleared.</p><p style='color: #94a3b8;'>You can now open the obfuscated app again for your presentation tomorrow with a fresh timer.</p>";
+    </script>
+</body>
+
+</html>
