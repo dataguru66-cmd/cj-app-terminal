@@ -855,20 +855,94 @@ is_ny     = in_session(ny_session)`;
 //|                                     Market Structure Assistant   |
 //+------------------------------------------------------------------+
 #property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   2
+
+//--- plot Buy
+#property indicator_label1  "Buy Signal"
+#property indicator_type1   DRAW_ARROW
+#property indicator_color1  clrLime
+#property indicator_width1  2
+
+//--- plot Sell
+#property indicator_label2  "Sell Signal"
+#property indicator_type2   DRAW_ARROW
+#property indicator_color2  clrRed
+#property indicator_width2  2
 
 //--- Input parameters
 input string   AsiaSessionTime   = "00:00-08:00"; // Asia Session
 input string   LondonSessionTime = "08:00-13:00"; // London Session
 input string   NYSessionTime     = "13:00-20:00"; // NY Session
-input color    AsiaColor         = clrBlue;       // Asia Box Color
+input color    AsiaColor         = clrLightBlue;  // Asia Box Color
+
+//--- Indicator buffers
+double         BuyBuffer[];
+double         SellBuffer[];
+
+//--- Session state variables
+double asiaHi, asiaLo;
+double lonHi, lonLo;
+double nyHi, nyLo;
+
+datetime asiaStart, asiaEnd;
+datetime lonStart, lonEnd;
+datetime nyStart, nyEnd;
+
+int currentVariation;
+bool isAsiaOpen, isLonOpen, isNyOpen;
+
+int TimeToMinutes(string timeStr)
+  {
+   string hm[];
+   ushort sep = StringGetCharacter(":", 0);
+   int k = StringSplit(timeStr, sep, hm);
+   if(k == 2)
+      return (int)StringToInteger(hm[0]) * 60 + (int)StringToInteger(hm[1]);
+   return 0;
+  }
+
+void ParseSessionTime(string session, int &startMins, int &endMins)
+  {
+   string parts[];
+   ushort sep = StringGetCharacter("-", 0);
+   int k = StringSplit(session, sep, parts);
+   if(k == 2)
+     {
+      startMins = TimeToMinutes(parts[0]);
+      endMins   = TimeToMinutes(parts[1]);
+     }
+  }
+
+bool InSession(int timeHours, int timeMins, int startMins, int endMins)
+  {
+   int totalMins = timeHours * 60 + timeMins;
+   if(startMins < endMins)
+      return (totalMins >= startMins && totalMins < endMins);
+   else // Crosses midnight
+      return (totalMins >= startMins || totalMins < endMins);
+  }
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   // Initialize arrays, buffers, and session time tracking logic here
-   // MetaTrader 5 Expert Advisor structure stub
+   SetIndexBuffer(0, BuyBuffer, INDICATOR_DATA);
+   SetIndexBuffer(1, SellBuffer, INDICATOR_DATA);
+   
+   PlotIndexSetInteger(0, PLOT_ARROW, 233); // Up Arrow
+   PlotIndexSetInteger(1, PLOT_ARROW, 234); // Down Arrow
+   
+   asiaHi = 0; asiaLo = 999999;
+   lonHi  = 0; lonLo  = 999999;
+   nyHi   = 0; nyLo   = 999999;
+   currentVariation = 0;
+   
+   isAsiaOpen = false;
+   isLonOpen = false;
+   isNyOpen = false;
+
    return(INIT_SUCCEEDED);
   }
 
@@ -886,9 +960,110 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-// Logic to detect Asia boundaries and London/NY breaks goes here
-// Check TimeHour() against input strings to draw standard structure boxes
+   int asiaStartMins, asiaEndMins;
+   int lonStartMins, lonEndMins;
+   int nyStartMins, nyEndMins;
    
+   ParseSessionTime(AsiaSessionTime, asiaStartMins, asiaEndMins);
+   ParseSessionTime(LondonSessionTime, lonStartMins, lonEndMins);
+   ParseSessionTime(NYSessionTime, nyStartMins, nyEndMins);
+
+   int limit = prev_calculated == 0 ? 1 : rates_total - 1;
+
+   for(int i = limit; i < rates_total; i++)
+     {
+      MqlDateTime dt;
+      TimeToStruct(time[i], dt);
+      
+      bool asiaActive = InSession(dt.hour, dt.min, asiaStartMins, asiaEndMins);
+      bool lonActive  = InSession(dt.hour, dt.min, lonStartMins, lonEndMins);
+      bool nyActive   = InSession(dt.hour, dt.min, nyStartMins, nyEndMins);
+      
+      // Clear signals
+      BuyBuffer[i]  = EMPTY_VALUE;
+      SellBuffer[i] = EMPTY_VALUE;
+
+      // Handle Asia
+      if(asiaActive && !isAsiaOpen)
+        {
+         isAsiaOpen = true;
+         asiaHi = high[i];
+         asiaLo = low[i];
+         asiaStart = time[i];
+        }
+      else if(asiaActive)
+        {
+         if(high[i] > asiaHi) asiaHi = high[i];
+         if(low[i] < asiaLo) asiaLo = low[i];
+         asiaEnd = time[i];
+        }
+      else if(!asiaActive && isAsiaOpen)
+        {
+         isAsiaOpen = false;
+         // Draw Box (Optional, left out for brevity in signal generation script)
+        }
+
+      // Handle London
+      if(lonActive && !isLonOpen)
+        {
+         isLonOpen = true;
+         lonHi = high[i];
+         lonLo = low[i];
+         lonStart = time[i];
+        }
+      else if(lonActive)
+        {
+         if(high[i] > lonHi) lonHi = high[i];
+         if(low[i] < lonLo) lonLo = low[i];
+         lonEnd = time[i];
+        }
+      else if(!lonActive && isLonOpen)
+        {
+         isLonOpen = false;
+        }
+
+      // Handle NY
+      if(nyActive && !isNyOpen)
+        {
+         isNyOpen = true;
+         nyHi = high[i];
+         nyLo = low[i];
+         nyStart = time[i];
+         
+         // Assess London Break
+         if(lonHi > asiaHi) currentVariation = 1;
+         else if(lonLo < asiaLo) currentVariation = 3;
+         else currentVariation = 0;
+        }
+      else if(nyActive)
+        {
+         if(high[i] > nyHi) nyHi = high[i];
+         if(low[i] < nyLo) nyLo = low[i];
+         nyEnd = time[i];
+         
+         // Assess NY Break for Variations
+         if(currentVariation == 1 || currentVariation == 2)
+            currentVariation = (nyHi > lonHi) ? 1 : 2;
+            
+         if(currentVariation == 3 || currentVariation == 4)
+            currentVariation = (nyLo < lonLo) ? 3 : 4;
+            
+         // Candlestick Patterns
+         bool bullEngulf = (open[i-1] > close[i-1] && close[i] > open[i] && close[i] > open[i-1] && open[i] < close[i-1]);
+         bool bearEngulf = (open[i-1] < close[i-1] && close[i] < open[i] && close[i] < open[i-1] && open[i] > close[i-1]);
+         
+         if((currentVariation == 1 || currentVariation == 2) && bearEngulf)
+            SellBuffer[i] = high[i] + (Point() * 10);
+            
+         if((currentVariation == 3 || currentVariation == 4) && bullEngulf)
+            BuyBuffer[i] = low[i] - (Point() * 10);
+        }
+      else if(!nyActive && isNyOpen)
+        {
+         isNyOpen = false;
+        }
+     }
+     
    return(rates_total);
   }`;
 
