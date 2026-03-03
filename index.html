@@ -515,6 +515,7 @@
                 <div class="nav-item active" data-tab="chart">📈 Chart & Strategy</div>
                 <div class="nav-item" data-tab="news">📰 News & Events</div>
                 <div class="nav-item" data-tab="stocks">📊 Options / Breadth</div>
+                <div class="nav-item" data-tab="calc">🧮 Calculator</div>
                 <div class="nav-item" data-tab="disclaimer" style="color: var(--warning-color);">⚖️ Disclaimer</div>
             </div>
         </aside>
@@ -652,6 +653,72 @@
                                                                     "isTransparent": true
                                 }
                             </script>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALCULATOR VIEW -->
+            <section id="calc-section" class="tab-content" style="padding: 16px; overflow-y: auto;">
+                <div class="glass-panel" style="padding: 24px; max-width: 600px; margin: 0 auto; width: 100%;">
+                    <h2 class="text-gradient" style="margin-bottom: 24px; font-size: 1.5rem;">Risk Calculator</h2>
+
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div>
+                            <label
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Account
+                                Balance ($)</label>
+                            <input type="number" id="calc-balance" class="auth-input" style="margin-bottom: 0;"
+                                placeholder="10000" oninput="runCalculator()">
+                        </div>
+
+                        <div style="display: flex; gap: 16px;">
+                            <div style="flex: 1;">
+                                <label
+                                    style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Risk
+                                    (%)</label>
+                                <input type="number" id="calc-risk" class="auth-input" style="margin-bottom: 0;"
+                                    value="1.0" step="0.1" oninput="runCalculator()">
+                            </div>
+                            <div style="flex: 1;">
+                                <label
+                                    style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">15M
+                                    ATR</label>
+                                <input type="number" id="calc-atr" class="auth-input" style="margin-bottom: 0;"
+                                    placeholder="40" oninput="runCalculator()">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Asset
+                                Class</label>
+                            <select id="calc-asset" class="auth-input"
+                                style="margin-bottom: 0; appearance: auto; background: rgba(0,0,0,0.5); color: #fff;"
+                                onchange="runCalculator()">
+                                <option value="NAS100">Indices (NAS100 / US30)</option>
+                                <option value="FOREX">Standard Forex / Points</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Output Panel -->
+                    <div
+                        style="margin-top: 24px; padding: 16px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--panel-border); border-radius: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                            <span style="color: var(--text-muted);">Risk Amount:</span>
+                            <span id="out-risk-amount" style="font-weight: 700; color: var(--sell-color);">$0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                            <span style="color: var(--text-muted);">Stop Loss Distance:</span>
+                            <span id="out-sl-points" style="font-weight: 700; color: var(--warning-color);">0.00
+                                pts</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; border-top: 1px solid var(--panel-border); padding-top: 12px;">
+                            <span style="color: var(--text-muted);">Recommended Lots:</span>
+                            <span id="out-lots" class="text-gradient"
+                                style="font-weight: 700; font-size: 1.2rem;">0.00</span>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1139,6 +1206,35 @@ int OnCalculate(const int rates_total,
                 console.warn("navigator.clipboard failed, trying fallback...", err);
                 fallbackCopyTextToClipboard(scriptToCopy);
             });
+        }
+
+        // --- 6. Risk Calculator ---
+        function runCalculator() {
+            const balance = parseFloat(document.getElementById('calc-balance').value) || 0;
+            const riskPercent = parseFloat(document.getElementById('calc-risk').value) || 0;
+            const currentATR = parseFloat(document.getElementById('calc-atr').value) || 0;
+            const asset = document.getElementById('calc-asset').value;
+
+            if (balance <= 0 || riskPercent <= 0 || currentATR <= 0) {
+                document.getElementById('out-risk-amount').innerText = "$0.00";
+                document.getElementById('out-sl-points').innerText = "0.00 pts";
+                document.getElementById('out-lots').innerText = "0.00";
+                return;
+            }
+
+            const riskAmount = balance * (riskPercent / 100);
+
+            // 2026 Volatility Multiplier (1.5x ATR is the sweet spot for NAS100/US30)
+            const stopDistance = currentATR * 1.5;
+
+            // Point Value (Standard for most brokers: $1 per full point for 1.0 lot)
+            const pointValue = (asset === 'NAS100' || asset === 'US30') ? 1.0 : 0.1;
+
+            const lotSize = riskAmount / (stopDistance * pointValue);
+
+            document.getElementById('out-risk-amount').innerText = "$" + riskAmount.toFixed(2);
+            document.getElementById('out-sl-points').innerText = stopDistance.toFixed(2) + " pts";
+            document.getElementById('out-lots').innerText = lotSize.toFixed(2);
         }
     </script>
 </body>
