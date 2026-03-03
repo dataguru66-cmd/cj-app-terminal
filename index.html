@@ -1236,6 +1236,66 @@ int OnCalculate(const int rates_total,
             document.getElementById('out-sl-points').innerText = stopDistance.toFixed(2) + " pts";
             document.getElementById('out-lots').innerText = lotSize.toFixed(2);
         }
+
+        // --- 7. Security Protocol (Incognito Check) ---
+        async function detectIncognito() {
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                try {
+                    const { quota } = await navigator.storage.estimate();
+                    // In 2026, most mobile and desktop private modes cap quota significantly (usually < 120MB)
+                    return quota < 120 * 1024 * 1024;
+                } catch (e) {
+                    return false;
+                }
+            }
+            return false; // Fallback for older browsers
+        }
+
+        async function suggestSecurityProtocol() {
+            const isPrivate = await detectIncognito();
+
+            if (!isPrivate) {
+                const banner = document.createElement('div');
+                banner.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(20, 0, 0, 0.9);
+                    border: 1px solid var(--sell-color);
+                    color: #fff;
+                    padding: 16px 24px;
+                    border-radius: 8px;
+                    z-index: 9999;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 8px;
+                    box-shadow: 0 10px 30px rgba(255, 62, 62, 0.2);
+                    backdrop-filter: blur(10px);
+                    max-width: 90vw;
+                    text-align: center;
+                    font-family: inherit;
+                `;
+
+                banner.innerHTML = `
+                    <div style="color: var(--warning-color); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        ⚠️ SECURITY RECOMMENDATION
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">
+                        You are running in a standard browser session. For maximum security and to ensure you receive the latest algorithmic updates, please use <strong>Private / Incognito</strong> mode.
+                    </div>
+                    <button onclick="this.parentElement.remove()" style="margin-top: 8px; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">
+                        Dismiss
+                    </button>
+                `;
+
+                document.body.appendChild(banner);
+            }
+        }
+
+        // Run check after a short delay so it doesn't block initial rendering
+        setTimeout(suggestSecurityProtocol, 2000);
     </script>
 </body>
 
