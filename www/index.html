@@ -681,23 +681,28 @@
                             </div>
                             <div style="flex: 1;">
                                 <label
-                                    style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">15M
-                                    ATR</label>
-                                <input type="number" id="calc-atr" class="auth-input" style="margin-bottom: 0;"
-                                    placeholder="40" oninput="runCalculator()">
+                                    style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Contract
+                                    Size</label>
+                                <input type="number" id="calc-contract-size" class="auth-input"
+                                    style="margin-bottom: 0;" placeholder="100" value="100" oninput="runCalculator()">
                             </div>
                         </div>
 
-                        <div>
-                            <label
-                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Asset
-                                Class</label>
-                            <select id="calc-asset" class="auth-input"
-                                style="margin-bottom: 0; appearance: auto; background: rgba(0,0,0,0.5); color: #fff;"
-                                onchange="runCalculator()">
-                                <option value="NAS100">Indices (NAS100 / US30)</option>
-                                <option value="FOREX">Standard Forex / Points</option>
-                            </select>
+                        <div style="display: flex; gap: 16px;">
+                            <div style="flex: 1;">
+                                <label
+                                    style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Entry
+                                    Price</label>
+                                <input type="number" id="calc-entry" class="auth-input" style="margin-bottom: 0;"
+                                    placeholder="2000" oninput="runCalculator()">
+                            </div>
+                            <div style="flex: 1;">
+                                <label
+                                    style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Stop
+                                    Price</label>
+                                <input type="number" id="calc-stop" class="auth-input" style="margin-bottom: 0;"
+                                    placeholder="1990" oninput="runCalculator()">
+                            </div>
                         </div>
                     </div>
 
@@ -710,12 +715,11 @@
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                             <span style="color: var(--text-muted);">Stop Loss Distance:</span>
-                            <span id="out-sl-points" style="font-weight: 700; color: var(--warning-color);">0.00
-                                pts</span>
+                            <span id="out-sl-points" style="font-weight: 700; color: var(--warning-color);">0.00</span>
                         </div>
                         <div
                             style="display: flex; justify-content: space-between; border-top: 1px solid var(--panel-border); padding-top: 12px;">
-                            <span style="color: var(--text-muted);">Recommended Lots:</span>
+                            <span style="color: var(--text-muted);">Position Size (Contracts):</span>
                             <span id="out-lots" class="text-gradient"
                                 style="font-weight: 700; font-size: 1.2rem;">0.00</span>
                         </div>
@@ -1209,32 +1213,48 @@ int OnCalculate(const int rates_total,
         }
 
         // --- 6. Risk Calculator ---
+        /**
+         * Calculates the number of contracts to trade based on risk.
+         * * @param {number} balance - Total account balance (e.g., 10000)
+         * @param {number} riskPercent - Percent to risk per trade (e.g., 1 for 1%)
+         * @param {number} entryPrice - Price where you enter the trade
+         * @param {number} stopPrice - Price where you exit if the trade fails
+         * @param {number} contractSize - The multiplier/value of 1 full contract
+         * @returns {number} - The number of contracts to buy/sell
+         */
+        function calculatePositionSize(balance, riskPercent, entryPrice, stopPrice, contractSize) {
+            const amountToRisk = balance * (riskPercent / 100);
+            const priceDistance = Math.abs(entryPrice - stopPrice);
+
+            if (priceDistance === 0) return 0; // Avoid division by zero
+
+            const positionSize = amountToRisk / (priceDistance * contractSize);
+
+            // Round down to the nearest 2 decimal places (or 0 if whole contracts only)
+            return Math.floor(positionSize * 100) / 100;
+        }
+
         function runCalculator() {
             const balance = parseFloat(document.getElementById('calc-balance').value) || 0;
             const riskPercent = parseFloat(document.getElementById('calc-risk').value) || 0;
-            const currentATR = parseFloat(document.getElementById('calc-atr').value) || 0;
-            const asset = document.getElementById('calc-asset').value;
+            const entryPrice = parseFloat(document.getElementById('calc-entry').value) || 0;
+            const stopPrice = parseFloat(document.getElementById('calc-stop').value) || 0;
+            const contractSize = parseFloat(document.getElementById('calc-contract-size').value) || 0;
 
-            if (balance <= 0 || riskPercent <= 0 || currentATR <= 0) {
+            if (balance <= 0 || riskPercent <= 0 || entryPrice <= 0 || stopPrice <= 0 || contractSize <= 0) {
                 document.getElementById('out-risk-amount').innerText = "$0.00";
-                document.getElementById('out-sl-points').innerText = "0.00 pts";
+                document.getElementById('out-sl-points').innerText = "0.00";
                 document.getElementById('out-lots').innerText = "0.00";
                 return;
             }
 
-            const riskAmount = balance * (riskPercent / 100);
+            const positionSize = calculatePositionSize(balance, riskPercent, entryPrice, stopPrice, contractSize);
+            const amountToRisk = balance * (riskPercent / 100);
+            const priceDistance = Math.abs(entryPrice - stopPrice);
 
-            // 2026 Volatility Multiplier (1.5x ATR is the sweet spot for NAS100/US30)
-            const stopDistance = currentATR * 1.5;
-
-            // Point Value (Standard for most brokers: $1 per full point for 1.0 lot)
-            const pointValue = (asset === 'NAS100' || asset === 'US30') ? 1.0 : 0.1;
-
-            const lotSize = riskAmount / (stopDistance * pointValue);
-
-            document.getElementById('out-risk-amount').innerText = "$" + riskAmount.toFixed(2);
-            document.getElementById('out-sl-points').innerText = stopDistance.toFixed(2) + " pts";
-            document.getElementById('out-lots').innerText = lotSize.toFixed(2);
+            document.getElementById('out-risk-amount').innerText = "$" + amountToRisk.toFixed(2);
+            document.getElementById('out-sl-points').innerText = priceDistance.toFixed(2);
+            document.getElementById('out-lots').innerText = positionSize.toFixed(2);
         }
 
         // --- 7. Security Protocol (Incognito Check) ---
