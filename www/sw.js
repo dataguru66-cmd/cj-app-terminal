@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cj-app-v5';
+const CACHE_NAME = 'cj-app-v6';
 const ASSETS = [
   './',
   './index.html',

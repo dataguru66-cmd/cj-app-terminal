@@ -668,7 +668,7 @@
                                 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Account
                                 Balance ($)</label>
                             <input type="number" id="calc-balance" class="auth-input" style="margin-bottom: 0;"
-                                placeholder="10000" oninput="runCalculator()">
+                                placeholder="10000" value="10000" oninput="runCalculator()">
                         </div>
 
                         <div style="display: flex; gap: 16px;">
@@ -694,14 +694,14 @@
                                     style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Entry
                                     Price</label>
                                 <input type="number" id="calc-entry" class="auth-input" style="margin-bottom: 0;"
-                                    placeholder="2000" oninput="runCalculator()">
+                                    placeholder="2000" value="2000" oninput="runCalculator()">
                             </div>
                             <div style="flex: 1;">
                                 <label
                                     style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; display: block;">Stop
                                     Price</label>
                                 <input type="number" id="calc-stop" class="auth-input" style="margin-bottom: 0;"
-                                    placeholder="1990" oninput="runCalculator()">
+                                    placeholder="1990" value="1990" oninput="runCalculator()">
                             </div>
                         </div>
                     </div>
@@ -815,6 +815,11 @@
             if (authOverlay) authOverlay.style.display = 'none';
             document.getElementById('app-wrapper').style.display = 'flex';
             loadChart('PEPPERSTONE:NAS100'); // Load initial chart
+
+            // Initialize calculator with default values
+            if (typeof runCalculator === 'function') {
+                runCalculator();
+            }
         }
 
         function attemptLogin() {
